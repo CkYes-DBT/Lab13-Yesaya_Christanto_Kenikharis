@@ -1,0 +1,60 @@
+import axios from "axios";
+
+const API_URL = "http://127.0.0.1:8000/api/auth/";
+
+// 🔹 LOGIN
+export const loginUser = async (email, password) => {
+  try {
+    const response = await axios.post(`${API_URL}login/`, {
+      email: email,
+      password: password,
+    });
+
+    // Ambil data dari response
+    const data = response.data;
+
+    // Deteksi struktur token
+    const token = data.token
+      ? data.token
+      : { access: data.access, refresh: data.refresh };
+
+    const { email: userEmail, username, full_name, major, role } = data;
+
+    // Simpan token dan data user ke localStorage
+    if (token?.access) {
+      localStorage.setItem("access_token", token.access);
+      localStorage.setItem("refresh_token", token.refresh);
+      localStorage.setItem("email", userEmail);
+      localStorage.setItem("username", username);
+      localStorage.setItem("full_name", full_name);
+      localStorage.setItem("major", major);
+      localStorage.setItem("role", role);
+
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token.access}`;
+    }
+
+    return { email: userEmail, username, full_name, major, role };
+  } catch (error) {
+    console.error("Login failed:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// 🔹 REGISTER
+export const registerUser = async (userData) => {
+  const response = await axios.post(`${API_URL}register/`, userData);
+  return response.data;
+};
+
+// 🔹 LOGOUT
+export const logoutUser = () => {
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+  localStorage.removeItem("email");
+  localStorage.removeItem("username");
+  localStorage.removeItem("full_name");
+  localStorage.removeItem("major");
+  localStorage.removeItem("role");
+
+  delete axios.defaults.headers.common["Authorization"];
+};
