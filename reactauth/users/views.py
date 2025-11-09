@@ -1,5 +1,10 @@
 from  rest_framework import generics, permissions
-from .serializers import RegisterSerializer, CustomTokenObtainPairSerializer, NilaiSerializer
+from .serializers import (
+    RegisterSerializer,
+    CustomTokenObtainPairSerializer,
+    NilaiSerializer,
+    StudentListSerializer,
+)
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import get_user_model
 from rest_framework.decorators import api_view
@@ -50,3 +55,14 @@ class InstructorNilaiListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         # Force the instructor to current user
         serializer.save(instructor=self.request.user)
+
+
+class StudentListView(generics.ListAPIView):
+    serializer_class = StudentListSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        user = self.request.user
+        if getattr(user, 'role', None) != 'instructor':
+            return User.objects.none()
+        return User.objects.filter(role='student').order_by('full_name')

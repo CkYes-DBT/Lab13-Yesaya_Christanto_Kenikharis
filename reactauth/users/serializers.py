@@ -110,3 +110,9 @@ class NilaiSerializer(serializers.ModelSerializer):
             'created_at'
         )
         read_only_fields = ('created_at', 'instructor')
+
+
+class StudentListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'full_name', 'email')

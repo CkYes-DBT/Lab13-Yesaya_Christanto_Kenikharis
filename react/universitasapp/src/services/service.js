@@ -96,3 +96,11 @@ export const createGrade = async ({ student, course, score }) => {
   );
   return res.data;
 };
+
+export const getStudents = async () => {
+  const token = localStorage.getItem("access_token");
+  const res = await axios.get(`${API_URL}students/`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};

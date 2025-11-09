@@ -1,11 +1,20 @@
 import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { getInstructorGrades } from "../services/service";
+import {
+  getInstructorGrades,
+  getStudents,
+  createGrade,
+} from "../services/service";
 
 const InstructorDashboard = () => {
   const [user, setUser] = useState(null);
   const [grades, setGrades] = useState([]);
   const [loadingGrades, setLoadingGrades] = useState(true);
+  const [students, setStudents] = useState([]);
+  const [loadingStudents, setLoadingStudents] = useState(true);
+  const [gradeForm, setGradeForm] = useState({ student: "", course: "", score: "" });
+  const [formError, setFormError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     // Ambil token & role dari localStorage
@@ -31,7 +40,39 @@ const InstructorDashboard = () => {
       .then((data) => setGrades(data))
       .catch(() => setGrades([]))
       .finally(() => setLoadingGrades(false));
+
+    // Fetch list of eligible students
+    getStudents()
+      .then((data) => setStudents(data))
+      .catch(() => setStudents([]))
+      .finally(() => setLoadingStudents(false));
   }, []);
+
+  const handleGradeSubmit = async (e) => {
+    e.preventDefault();
+    setFormError("");
+
+    if (!gradeForm.student || !gradeForm.course || !gradeForm.score) {
+      setFormError("Lengkapi semua field sebelum menyimpan.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const newGrade = await createGrade({
+        student: gradeForm.student,
+        course: gradeForm.course,
+        score: gradeForm.score,
+      });
+      setGrades((prev) => [newGrade, ...prev]);
+      setGradeForm({ student: "", course: "", score: "" });
+    } catch (error) {
+      console.error("Failed to create grade", error.response?.data || error.message);
+      setFormError("Gagal menyimpan nilai. Pastikan datanya benar.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleLogout = () => {
     // Hapus semua data user dan token
@@ -75,6 +116,69 @@ const InstructorDashboard = () => {
           <p className="text-primary fw-semibold mt-3">
             Role: {user.role.toUpperCase()}
           </p>
+        </div>
+
+        {/* Grade Input Section */}
+        <div className="mt-4">
+          <h5 className="fw-bold">Input Nilai Mahasiswa</h5>
+          <form onSubmit={handleGradeSubmit} className="mt-3">
+            <div className="mb-3">
+              <label className="form-label fw-semibold">Mahasiswa</label>
+              <select
+                className="form-select"
+                value={gradeForm.student}
+                onChange={(e) => setGradeForm({ ...gradeForm, student: e.target.value })}
+                disabled={loadingStudents || submitting || students.length === 0}
+                required
+              >
+                <option value="">
+                  {loadingStudents ? "Memuat mahasiswa..." : "Pilih mahasiswa"}
+                </option>
+                {students.map((student) => (
+                  <option key={student.id} value={student.id}>
+                    {student.full_name} ({student.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label fw-semibold">Mata Kuliah</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Contoh: WebBasedDevelopment"
+                value={gradeForm.course}
+                onChange={(e) => setGradeForm({ ...gradeForm, course: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label fw-semibold">Nilai</label>
+              <input
+                type="number"
+                className="form-control"
+                placeholder="0 - 100"
+                min="0"
+                max="100"
+                step="0.01"
+                value={gradeForm.score}
+                onChange={(e) => setGradeForm({ ...gradeForm, score: e.target.value })}
+                required
+              />
+            </div>
+
+            {formError && (
+              <div className="alert alert-danger py-2" role="alert">
+                {formError}
+              </div>
+            )}
+
+            <button type="submit" className="btn btn-warning fw-semibold w-100" disabled={submitting}>
+              {submitting ? "Menyimpan..." : "Simpan Nilai"}
+            </button>
+          </form>
         </div>
 
         {/* Grades Section */}
