@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { getStudentGrades } from "../services/service";
 
 const StudentDashboard = () => {
   const [user, setUser] = useState(null);
+  const [grades, setGrades] = useState([]);
+  const [loadingGrades, setLoadingGrades] = useState(true);
 
   useEffect(() => {
     // Ambil data dari localStorage
@@ -21,6 +24,12 @@ const StudentDashboard = () => {
     const major = localStorage.getItem("major");
 
     setUser({ email, username, full_name, major, role });
+
+    // Fetch grades for the logged-in student
+    getStudentGrades()
+      .then((data) => setGrades(data))
+      .catch(() => setGrades([]))
+      .finally(() => setLoadingGrades(false));
   }, []);
 
   const handleLogout = () => {
@@ -48,7 +57,7 @@ const StudentDashboard = () => {
 
   return (
     <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
-      <div className="card shadow-lg p-4" style={{ width: "25rem", borderRadius: "16px" }}>
+      <div className="card shadow-lg p-4" style={{ width: "32rem", borderRadius: "16px" }}>
         <h3 className="text-center text-primary mb-4 fw-bold">Student Dashboard</h3>
         <div className="mb-3">
           <p className="mb-1">
@@ -63,6 +72,28 @@ const StudentDashboard = () => {
           <p className="text-success fw-semibold mt-3">
             Role: {user.role.toUpperCase()}
           </p>
+        </div>
+
+        {/* Grades Section */}
+        <div className="mt-4">
+          <h5 className="fw-bold">Nilai Saya</h5>
+          {loadingGrades ? (
+            <div className="text-muted">Memuat nilai...</div>
+          ) : grades.length === 0 ? (
+            <div className="text-muted">Belum ada nilai.</div>
+          ) : (
+            <ul className="list-group">
+              {grades.map((g) => (
+                <li key={g.id} className="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <div className="fw-semibold">{g.course}</div>
+                    <small className="text-muted">Dosen: {g.instructor_name || "-"}</small>
+                  </div>
+                  <span className="badge bg-primary rounded-pill">{g.score}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <button

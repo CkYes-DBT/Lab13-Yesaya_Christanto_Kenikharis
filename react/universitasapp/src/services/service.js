@@ -69,3 +69,30 @@ export const logoutUser = () => {
 
   delete axios.defaults.headers.common["Authorization"];
 };
+
+// dY"1 NILAI (Grades)
+export const getStudentGrades = async () => {
+  const token = localStorage.getItem("access_token");
+  const res = await axios.get(`${API_URL}nilai/student/`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+
+export const getInstructorGrades = async () => {
+  const token = localStorage.getItem("access_token");
+  const res = await axios.get(`${API_URL}nilai/instructor/`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+
+export const createGrade = async ({ student, course, score }) => {
+  const token = localStorage.getItem("access_token");
+  const res = await axios.post(
+    `${API_URL}nilai/instructor/`,
+    { student, course, score },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return res.data;
+};

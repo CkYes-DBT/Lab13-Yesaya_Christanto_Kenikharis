@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginUser } from "../services/service";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -26,6 +26,19 @@ const LoginPage = () => {
       setError("Login gagal. Periksa email dan password Anda.");
     }
   };
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    const role = localStorage.getItem("role");
+
+    if (token && role) {
+      if (role === "student") {
+        navigate("/student-dashboard", { replace: true });
+      } else if (role === "instructor") {
+        navigate("/instructor-dashboard", { replace: true });
+      }
+    }
+  }, [navigate]);
 
   return (
     <div className="d-flex justify-content-center align-items-center vh-100 bg-light">

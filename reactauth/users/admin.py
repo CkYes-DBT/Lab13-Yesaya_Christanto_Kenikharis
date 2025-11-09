@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CustomUser
+from .models import CustomUser, Nilai
 from django.contrib.auth.admin import UserAdmin
 # Register your models here.
 
@@ -24,3 +24,9 @@ class CustomUserAdmin(UserAdmin):
 
     ordering = ('email',)
 admin.site.register(CustomUser, CustomUserAdmin)
+
+@admin.register(Nilai)
+class NilaiAdmin(admin.ModelAdmin):
+    list_display = ('id', 'course', 'student', 'instructor', 'score', 'created_at')
+    list_filter = ('course', 'instructor')
+    search_fields = ('student__email', 'student__full_name', 'course')

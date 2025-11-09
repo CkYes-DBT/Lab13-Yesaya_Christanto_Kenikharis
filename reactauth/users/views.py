@@ -1,10 +1,11 @@
 from  rest_framework import generics, permissions
-from .serializers import RegisterSerializer, CustomTokenObtainPairSerializer
+from .serializers import RegisterSerializer, CustomTokenObtainPairSerializer, NilaiSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import get_user_model
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import CustomUser as User
+from .models import Nilai
 # Create your views here.
 user = get_user_model()
 
@@ -23,3 +24,29 @@ def get_major_choices(request):
         for choice in User.MAJOR_CHOICES
     ]
     return Response(choices)
+
+
+class StudentNilaiListView(generics.ListAPIView):
+    serializer_class = NilaiSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        user = self.request.user
+        if getattr(user, 'role', None) != 'student':
+            return Nilai.objects.none()
+        return Nilai.objects.filter(student=user).order_by('-created_at')
+
+
+class InstructorNilaiListCreateView(generics.ListCreateAPIView):
+    serializer_class = NilaiSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        user = self.request.user
+        if getattr(user, 'role', None) != 'instructor':
+            return Nilai.objects.none()
+        return Nilai.objects.filter(instructor=user).select_related('student').order_by('-created_at')
+
+    def perform_create(self, serializer):
+        # Force the instructor to current user
+        serializer.save(instructor=self.request.user)

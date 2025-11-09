@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 import re
+from .models import Nilai
 
 User = get_user_model()
 
@@ -94,3 +95,18 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         })
 
         return data
+
+
+class NilaiSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.full_name', read_only=True)
+    student_email = serializers.CharField(source='student.email', read_only=True)
+    instructor_name = serializers.CharField(source='instructor.full_name', read_only=True)
+
+    class Meta:
+        model = Nilai
+        fields = (
+            'id', 'student', 'student_name', 'student_email',
+            'instructor', 'instructor_name', 'course', 'score',
+            'created_at'
+        )
+        read_only_fields = ('created_at', 'instructor')
