@@ -1,156 +1,206 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { registerUser } from "../services/service";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-const RegisterPage = () => {
+const Register = () => {
+  const [majors, setMajors] = useState([]);
+  const [selectedMajor, setSelectedMajor] = useState("");
+  const [role, setRole] = useState("student");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
   const [formData, setFormData] = useState({
-    email: "",
     username: "",
+    email: "",
     full_name: "",
-    major: "",
-    role: "Student",
     password: "",
     password_confirmation: "",
   });
 
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const navigate = useNavigate();
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  // 🔹 Ambil daftar major dari Django API
+  useEffect(() => {
+    axios
+      .get("http://localhost:8000/api/auth/majors/")
+      .then((response) => setMajors(response.data))
+      .catch((error) => console.error("Error fetching majors:", error));
+  }, []);
 
-  const handleSubmit = async (e) => {
+  // 🔹 Handle form submit
+  const handleSubmit = (e) => {
     e.preventDefault();
     setError("");
-    setSuccess("");
+    setLoading(true);
 
-    if (formData.password !== formData.password_confirmation) {
-      setError("Password dan konfirmasi password tidak cocok.");
-      return;
-    }
-
-    try {
-      await registerUser(formData);
-      setSuccess("Registrasi berhasil! Anda akan diarahkan ke halaman login...");
-      setTimeout(() => navigate("/login"), 2000);
-    } catch {
-      setError("Registrasi gagal. Pastikan data sudah benar.");
-    }
+    axios
+      .post("http://localhost:8000/api/auth/register/", {
+        ...formData,
+        major: selectedMajor,
+        role: role,
+      })
+      .then(() => {
+        alert("✅ Akun berhasil dibuat!");
+        navigate("/login");
+      })
+      .catch((err) => {
+        console.error("Register failed:", err.response?.data || err.message);
+        setError(
+          "Registrasi gagal: " +
+            JSON.stringify(err.response?.data || err.message)
+        );
+      })
+      .finally(() => setLoading(false));
   };
 
   return (
     <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
-      <div className="card shadow-lg p-4" style={{ width: "32rem", borderRadius: "20px" }}>
-        <h3 className="text-center text-primary fw-bold mb-4">Register Akun</h3>
-        {error && <div className="alert alert-danger text-center">{error}</div>}
-        {success && <div className="alert alert-success text-center">{success}</div>}
+      <div
+        className="card shadow-lg p-4"
+        style={{ width: "32rem", borderRadius: "20px" }}
+      >
+        <h3 className="text-center text-primary fw-bold mb-4">
+          Register Akun
+        </h3>
+
+        {/* 🔹 Alert error tampil di atas form */}
+        {error && (
+          <div className="alert alert-danger text-center" role="alert">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
-          <div className="row">
-            <div className="col-md-6 mb-3">
-              <label className="form-label fw-semibold">Email</label>
-              <input
-                type="email"
-                className="form-control"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="col-md-6 mb-3">
-              <label className="form-label fw-semibold">Username</label>
-              <input
-                type="text"
-                className="form-control"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                required
-              />
-            </div>
+          {/* Username */}
+          <div className="mb-3">
+            <label className="form-label fw-semibold">Username</label>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Masukkan username"
+              onChange={(e) =>
+                setFormData({ ...formData, username: e.target.value })
+              }
+              required
+            />
           </div>
 
+          {/* Email */}
+          <div className="mb-3">
+            <label className="form-label fw-semibold">Email</label>
+            <input
+              type="email"
+              className="form-control"
+              placeholder="Masukkan email"
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+              required
+            />
+          </div>
+
+          {/* Full Name */}
           <div className="mb-3">
             <label className="form-label fw-semibold">Full Name</label>
             <input
               type="text"
               className="form-control"
-              name="full_name"
-              value={formData.full_name}
-              onChange={handleChange}
+              placeholder="Masukkan nama lengkap"
+              onChange={(e) =>
+                setFormData({ ...formData, full_name: e.target.value })
+              }
               required
             />
           </div>
 
+          {/* Major & Role */}
           <div className="row">
             <div className="col-md-6 mb-3">
               <label className="form-label fw-semibold">Major</label>
               <select
                 className="form-select"
-                name="major"
-                value={formData.major}
-                onChange={handleChange}
+                value={selectedMajor}
+                onChange={(e) => setSelectedMajor(e.target.value)}
                 required
               >
                 <option value="">Pilih jurusan</option>
-                <option value="DBT">Digital Business Technology</option>
-                <option value="FoodTech">Food Technology</option>
-                <option value="Business">Business</option>
-                <option value="Finance">Finance</option>
+                {majors.length > 0 ? (
+                  majors.map((major) => (
+                    <option key={major.value} value={major.value}>
+                      {major.label}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">Loading...</option>
+                )}
               </select>
             </div>
+
             <div className="col-md-6 mb-3">
               <label className="form-label fw-semibold">Role</label>
               <select
                 className="form-select"
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
               >
-                <option value="Student">Student</option>
-                <option value="Instructor">Instructor</option>
+                <option value="student">Student</option>
+                <option value="instructor">Instructor</option>
               </select>
             </div>
           </div>
 
+          {/* Password */}
           <div className="mb-3">
             <label className="form-label fw-semibold">Password</label>
             <input
               type="password"
               className="form-control"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
+              placeholder="Masukkan password"
+              onChange={(e) =>
+                setFormData({ ...formData, password: e.target.value })
+              }
               required
             />
           </div>
 
+          {/* Confirm Password */}
           <div className="mb-4">
-            <label className="form-label fw-semibold">Konfirmasi Password</label>
+            <label className="form-label fw-semibold">
+              Konfirmasi Password
+            </label>
             <input
               type="password"
               className="form-control"
-              name="password_confirmation"
-              value={formData.password_confirmation}
-              onChange={handleChange}
+              placeholder="Ulangi password"
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  password_confirmation: e.target.value,
+                })
+              }
               required
             />
           </div>
 
-          <button type="submit" className="btn btn-primary w-100 fw-semibold">
-            Register
+          {/* Tombol Register */}
+          <button
+            type="submit"
+            className="btn btn-primary w-100 fw-semibold mt-2"
+            disabled={loading}
+          >
+            {loading ? "Mendaftarkan..." : "Register"}
           </button>
         </form>
 
+        {/* 🔹 Tombol Login */}
         <div className="text-center mt-3">
           <span className="text-muted">Sudah punya akun? </span>
           <button
-            onClick={() => navigate("/login")}
             className="btn btn-link text-decoration-none p-0"
+            onClick={() => navigate("/login")}
           >
-            Login
+            Login di sini
           </button>
         </div>
       </div>
@@ -158,4 +208,4 @@ const RegisterPage = () => {
   );
 };
 
-export default RegisterPage;
+export default Register;

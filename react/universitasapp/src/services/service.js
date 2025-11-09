@@ -6,11 +6,10 @@ const API_URL = "http://127.0.0.1:8000/api/auth/";
 export const loginUser = async (email, password) => {
   try {
     const response = await axios.post(`${API_URL}login/`, {
-      email: email,
-      password: password,
+      email,
+      password,
     });
 
-    // Ambil data dari response
     const data = response.data;
 
     // Deteksi struktur token
@@ -18,13 +17,20 @@ export const loginUser = async (email, password) => {
       ? data.token
       : { access: data.access, refresh: data.refresh };
 
-    const { email: userEmail, username, full_name, major, role } = data;
+    // Ambil user info dari response
+    const {
+      email: userEmail,
+      username,
+      full_name,
+      major,
+      role,
+    } = data;
 
     // Simpan token dan data user ke localStorage
     if (token?.access) {
       localStorage.setItem("access_token", token.access);
       localStorage.setItem("refresh_token", token.refresh);
-      localStorage.setItem("email", userEmail);
+      localStorage.setItem("email", userEmail); // ✅ perbaikan di sini
       localStorage.setItem("username", username);
       localStorage.setItem("full_name", full_name);
       localStorage.setItem("major", major);
@@ -33,7 +39,7 @@ export const loginUser = async (email, password) => {
       axios.defaults.headers.common["Authorization"] = `Bearer ${token.access}`;
     }
 
-    return { email: userEmail, username, full_name, major, role };
+    return { userEmail, username, full_name, major, role };
   } catch (error) {
     console.error("Login failed:", error.response?.data || error.message);
     throw error;
@@ -42,8 +48,13 @@ export const loginUser = async (email, password) => {
 
 // 🔹 REGISTER
 export const registerUser = async (userData) => {
-  const response = await axios.post(`${API_URL}register/`, userData);
-  return response.data;
+  try {
+    const response = await axios.post(`${API_URL}register/`, userData);
+    return response.data;
+  } catch (error) {
+    console.error("Register error:", error.response?.data || error.message);
+    throw error;
+  }
 };
 
 // 🔹 LOGOUT
